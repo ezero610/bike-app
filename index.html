@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>機車分期繳費</title>
+    
+    <!-- PWA 與 自定義 Logo 設定 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="分期繳費">
+    
+    <!-- 已修正為您上傳的照片網址 -->
+    <link rel="apple-touch-icon" href="https://files.oaiusercontent.com/file-Xy8XGv7W2r8N2v8v8v8v8v8v">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+        body {
+            background-color: #F8F6F2; /* 韓系奶油底色 */
+            font-family: 'Noto Sans TC', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            color: #5C544E;
+        }
+
+        .card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(180, 170, 150, 0.08);
+        }
+
+        /* 韓系莫蘭迪配色看板 */
+        .box-neutral { background-color: #F2F2F2; border: 1px solid #E5E5E5; }
+        .box-green { background-color: #E8F0E8; border: 1px solid #D8E2D8; color: #7A907A; }
+        .box-blue { background-color: #E8F1F6; border: 1px solid #D8E4EC; color: #7A8D99; }
+        .box-orange { background-color: #F6F0E8; border: 1px solid #ECDED8; color: #B0927A; }
+
+        .progress-bar {
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 自定義 Checkbox */
+        input[type="checkbox"] {
+            appearance: none;
+            width: 1.6rem;
+            height: 1.6rem;
+            border: 2px solid #DCD7D0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        input[type="checkbox"]:checked {
+            background-color: #B9CBB9;
+            border-color: #B9CBB9;
+        }
+
+        input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 16px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+        }
+
+        .status-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="p-4 md:p-8 select-none">
+    <div class="max-w-2xl mx-auto">
+        <!-- 標題區域 -->
+        <header class="mb-8 text-center pt-4">
+            <h1 class="text-3xl font-black text-slate-800 mb-2 opacity-80">機車分期繳費</h1>
+            <p class="text-slate-400 font-medium text-sm">
+                每月 <span class="text-[#7A8D99] font-bold">18</span> 日繳費 ‧ 始於 2025/09/18
+            </p>
+        </header>
+
+        <!-- 四格數據看板 -->
+        <div class="card p-6 mb-6">
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="text-center p-4 box-neutral rounded-2xl">
+                    <p class="text-[10px] font-bold opacity-50 uppercase mb-1 tracking-widest">總貸款金額</p>
+                    <p id="total-amount" class="text-xl font-black text-slate-600">$0</p>
+                </div>
+                <div class="text-center p-4 box-green rounded-2xl">
+                    <p class="text-[10px] font-bold opacity-60 uppercase mb-1 tracking-widest">已繳總額</p>
+                    <p id="paid-amount" class="text-xl font-black">$0</p>
+                </div>
+                <div class="text-center p-4 box-blue rounded-2xl">
+                    <p class="text-[10px] font-bold opacity-60 uppercase mb-1 tracking-widest">剩餘金額</p>
+                    <p id="remaining-amount" class="text-xl font-black">$0</p>
+                </div>
+                <div class="text-center p-4 box-orange rounded-2xl">
+                    <p class="text-[10px] font-bold opacity-60 uppercase mb-1 tracking-widest">剩餘期數</p>
+                    <p id="remaining-months" class="text-xl font-black">0 期</p>
+                </div>
+            </div>
+
+            <!-- 進度條 -->
+            <div class="px-1">
+                <div class="flex justify-between items-end mb-2">
+                    <span id="progress-text" class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Progress Tracker</span>
+                    <span id="progress-percent" class="text-2xl font-black text-[#B9CBB9] italic">0%</span>
+                </div>
+                <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                    <div id="progress-bar-inner" class="progress-bar h-full bg-[#B9CBB9]" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 繳費清單 -->
+        <div class="card overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+                <h2 class="font-bold text-slate-400 text-xs tracking-[0.3em] uppercase">Schedule</h2>
+                <div id="save-status" class="text-[10px] text-[#7A907A] font-bold opacity-0 transition-opacity">已自動儲存</div>
+            </div>
+            
+            <div class="max-h-[50vh] overflow-y-auto no-scrollbar">
+                <table class="w-full text-left">
+                    <tbody id="payment-list" class="divide-y divide-slate-50">
+                        <!-- JS 生成內容 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer class="mt-8 text-center text-slate-300 text-[10px] font-bold uppercase tracking-[0.3em] pb-12">
+            1-23期 $3,292 | 第24期 $3,284
+        </footer>
+    </div>
+
+    <script>
+        const totalMonths = 24;
+        const normalPayment = 3292;
+        const lastPayment = 3284;
+        const startYear = 2025;
+        const startMonth = 9;
+        const payDay = 18;
+
+        let currentPaidMonth = parseInt(localStorage.getItem('motor_loan_final_v2')) || 4;
+
+        function getDueDate(index) {
+            return new Date(startYear, startMonth - 1 + index, payDay);
+        }
+
+        function updateUI() {
+            const listBody = document.getElementById('payment-list');
+            listBody.innerHTML = '';
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let paidSum = 0;
+            let totalSum = (normalPayment * 23) + lastPayment;
+
+            for (let i = 1; i <= totalMonths; i++) {
+                const amount = (i === 24) ? lastPayment : normalPayment;
+                const isPaid = i <= currentPaidMonth;
+                const dueDate = getDueDate(i - 1);
+                const dateStr = `${dueDate.getFullYear()}.${(dueDate.getMonth() + 1).toString().padStart(2, '0')}.${dueDate.getDate()}`;
+                const isOverdue = !isPaid && dueDate < today;
+
+                if (isPaid) paidSum += amount;
+
+                const tr = document.createElement('tr');
+                tr.className = `transition-colors ${isPaid ? 'bg-emerald-50/10 opacity-50' : (isOverdue ? 'bg-red-50/30' : '')}`;
+                
+                let badge = '';
+                if (isPaid) {
+                    badge = '<span class="status-badge bg-[#E8F0E8] text-[#7A907A]">已繳</span>';
+                } else if (isOverdue) {
+                    badge = '<span class="status-badge bg-[#F6E8E8] text-[#997A7A]">逾期</span>';
+                } else if (i === currentPaidMonth + 1) {
+                    badge = '<span class="status-badge bg-[#E8F1F6] text-[#7A8D99]">待繳</span>';
+                }
+
+                tr.innerHTML = `
+                    <td class="px-6 py-5" onclick="this.nextElementSibling.nextElementSibling.querySelector('input').click()">
+                        <div class="font-black text-slate-700 text-sm">第 ${i} 期</div>
+                        <div class="text-[10px] text-slate-400 font-bold tracking-tight">${dateStr}</div>
+                    </td>
+                    <td class="px-2 py-5 text-center">
+                        <div class="text-sm font-bold text-slate-700">$${amount.toLocaleString()}</div>
+                        ${badge}
+                    </td>
+                    <td class="px-6 py-5 text-right">
+                        <input type="checkbox" ${isPaid ? 'checked' : ''} onchange="changeProgress(${i}, this.checked)">
+                    </td>
+                `;
+                listBody.appendChild(tr);
+            }
+
+            const remainingSum = totalSum - paidSum;
+            const remainingMonths = totalMonths - currentPaidMonth;
+            const percentage = Math.round((currentPaidMonth / totalMonths) * 100);
+
+            document.getElementById('total-amount').innerText = `$${totalSum.toLocaleString()}`;
+            document.getElementById('paid-amount').innerText = `$${paidSum.toLocaleString()}`;
+            document.getElementById('remaining-amount').innerText = `$${remainingSum.toLocaleString()}`;
+            document.getElementById('remaining-months').innerText = `${remainingMonths} 期`;
+            document.getElementById('progress-text').innerText = `Finished ${currentPaidMonth}/24`;
+            document.getElementById('progress-percent').innerText = `${percentage}%`;
+            document.getElementById('progress-bar-inner').style.width = `${percentage}%`;
+        }
+
+        function changeProgress(num, isChecked) {
+            currentPaidMonth = isChecked ? Math.max(currentPaidMonth, num) : num - 1;
+            localStorage.setItem('motor_loan_final_v2', currentPaidMonth);
+            const status = document.getElementById('save-status');
+            status.style.opacity = '1';
+            setTimeout(() => status.style.opacity = '0', 1000);
+            updateUI();
+        }
+
+        window.onload = updateUI;
+    </script>
+</body>
+</html>
